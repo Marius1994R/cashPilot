@@ -6,6 +6,7 @@
   --primary-color: #10b981;
   --primary-dark: #059669;
   --primary-light: #34d399;
+  --primary-hover: #059669;
   --primary-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
   
   --danger-color: #ef4444;
@@ -5497,7 +5498,6 @@ body {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
 }
 
 .auth-form .form-group {
@@ -5582,7 +5582,9 @@ body {
 
 .auth-button.primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  color: white;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .auth-button:disabled {
@@ -5628,10 +5630,12 @@ body {
   margin-left: 0.25rem;
   text-decoration: underline;
   font-size: inherit;
+  transition: color 0.2s ease;
 }
 
 .auth-link:hover {
   color: var(--primary-hover);
+  text-decoration-color: var(--primary-hover);
 }
 
 /* Loading Styles */
