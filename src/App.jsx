@@ -860,59 +860,27 @@ function AuthenticatedApp() {
           <div className="header-left">
             <div className="logo" onClick={() => setActiveTab('dashboard')}>
               <div className="logo-icon">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Wallet Body */}
-                  <path
-                    d="M4 8C4 6.89543 4.89543 6 6 6H24C25.1046 6 26 6.89543 26 8V24C26 25.1046 25.1046 26 24 26H6C4.89543 26 4 25.1046 4 24V8Z"
-                    fill="currentColor"
-                    fillOpacity="0.1"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  {/* Wallet Flap */}
-                  <path
-                    d="M4 8V12C4 13.1046 4.89543 14 6 14H20C21.1046 14 22 13.1046 22 12V10"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  {/* Coin */}
-                  <circle
-                    cx="19"
-                    cy="5"
-                    r="4"
-                    fill="var(--primary-color)"
-                    stroke="var(--primary-dark)"
-                    strokeWidth="1"
-                  />
-                  {/* Dollar Sign on Coin */}
-                  <path
-                    d="M18.5 3V7M19.5 3V7M17.5 4.5H20.5C20.7761 4.5 21 4.72386 21 5C21 5.27614 20.7761 5.5 20.5 5.5H17.5C17.2239 5.5 17 5.72386 17 6C17 6.27614 17.2239 6.5 17.5 6.5H20.5"
-                    stroke="white"
-                    strokeWidth="0.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  {/* Wallet Details */}
-                  <rect
-                    x="7"
-                    y="17"
-                    width="12"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                    fillOpacity="0.3"
-                  />
-                  <rect
-                    x="7"
-                    y="20"
-                    width="8"
-                    height="1.5"
-                    rx="0.75"
-                    fill="currentColor"
-                    fillOpacity="0.2"
-                  />
+                <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="100" height="100" rx="20" fill="#10B981" />
+                  <g transform="translate(10, 10) scale(2.5)">
+                    <path
+                      d="M3.363 4.414l4.875 19.348 9.467-3.018-8.448-10.298 10.902 9.56 8.853-2.77-25.649-12.822zM18.004 27.586v-5.324l-3.116 0.926 3.116 4.398z"
+                      fill="white"
+                      transform="scale(-1,1) translate(-32,0)"
+                    />
+                  </g>
+                  <circle cx="18" cy="18" r="10" fill="white" />
+                  <text
+                    x="18"
+                    y="21"
+                    fontSize="14"
+                    fontWeight="bold"
+                    fill="#10B981"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    $
+                  </text>
                 </svg>
               </div>
               <h1>CashPilot</h1>
