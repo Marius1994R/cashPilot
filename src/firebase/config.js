@@ -5,12 +5,12 @@ import { getFirestore } from 'firebase/firestore';
 
 // Your Firebase configuration object
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-api-key-here",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-auth-domain-here",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id-here", 
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-storage-bucket-here",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "your-messaging-sender-id-here",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "your-app-id-here"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAkjFOtCOHhZxbB_D_5lLsxccDgEsZV5JQ",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "cashpilot-2003e.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "cashpilot-2003e",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "cashpilot-2003e.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "953051666821",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:953051666821:web:73107f4cee7df56c188cec"
 };
 
 // Initialize Firebase
