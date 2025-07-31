@@ -1,0 +1,28 @@
+{
+  "bankData": {
+    "accountNumber": "123456789",
+    "accountHolder": "John Doe",
+    "balance": 5000.00
+  },
+  "records": [
+    {
+      "recordId": "A001",
+      "type": "debit",
+      "value": 50.00,
+      "memo": "Purchase at store",
+      "timestamp": "2024-01-15T10:30:00Z"
+    },
+    {
+      "recordId": "A002",
+      "type": "credit",
+      "value": 2500.00,
+      "memo": "Salary deposit",
+      "timestamp": "2024-01-15T09:00:00Z"
+    }
+  ],
+  "metadata": {
+    "format": "bank-export-v1.0",
+    "generatedBy": "BankSystem",
+    "generatedAt": "2025-01-29T10:30:15.245Z"
+  }
+}

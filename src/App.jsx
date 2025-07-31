@@ -1,0 +1,954 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  DollarSign, 
+  PlusCircle, 
+  TrendingUp, 
+  TrendingDown, 
+  PieChart, 
+  Settings,
+  Moon,
+  Sun,
+  Download,
+  Upload,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Calendar,
+  Folder,
+  Target,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
+  BarChart3,
+  FileText,
+  Repeat,
+  Flag
+} from 'lucide-react';
+import TransactionForm from './components/TransactionForm';
+import TransactionList from './components/TransactionList';
+import Dashboard from './components/Dashboard';
+import Categories from './components/Categories';
+import Budgets from './components/Budgets';
+import RecurringTransactions from './components/RecurringTransactions';
+import SpendingInsights from './components/SpendingInsights';
+import GoalTracking from './components/GoalTracking';
+import Alert from './components/Alert';
+import Confirm from './components/Confirm';
+import { currencies } from './utils/currencies';
+import { useModal } from './hooks/useModal';
+
+const STORAGE_KEY = 'cash-pilot-data';
+
+const defaultCategories = [
+  { id: '1', name: 'Food & Dining', color: '#ef4444', type: 'expense' },
+  { id: '2', name: 'Transportation', color: '#f97316', type: 'expense' },
+  { id: '3', name: 'Shopping', color: '#eab308', type: 'expense' },
+  { id: '4', name: 'Entertainment', color: '#22c55e', type: 'expense' },
+  { id: '5', name: 'Bills & Utilities', color: '#3b82f6', type: 'expense' },
+  { id: '6', name: 'Healthcare', color: '#8b5cf6', type: 'expense' },
+  { id: '7', name: 'Savings', color: '#10b981', type: 'expense' },
+  { id: '8', name: 'Salary', color: '#059669', type: 'income' },
+  { id: '9', name: 'Business', color: '#0891b2', type: 'income' },
+  { id: '10', name: 'Investments', color: '#06b6d4', type: 'income' },
+];
+
+function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [transactions, setTransactions] = useState([]);
+  const [categories, setCategories] = useState(defaultCategories);
+  const [budgets, setBudgets] = useState([]);
+  const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [settings, setSettings] = useState({
+    currency: 'USD',
+    theme: 'light'
+  });
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Modal hook for professional notifications
+  const modal = useModal();
+
+  // Load data from localStorage on app start
+  useEffect(() => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedData && savedData !== 'undefined') {
+      try {
+        const data = JSON.parse(savedData);
+        setTransactions(data.transactions || []);
+        
+        // Ensure Savings category exists
+        const loadedCategories = data.categories || defaultCategories;
+        const hasSavingsCategory = loadedCategories.some(cat => cat.name === 'Savings');
+        
+        if (!hasSavingsCategory) {
+          const maxId = Math.max(...loadedCategories.map(cat => parseInt(cat.id) || 0));
+          const savingsCategory = {
+            id: (maxId + 1).toString(),
+            name: 'Savings',
+            color: '#10b981',
+            type: 'expense'
+          };
+          loadedCategories.push(savingsCategory);
+        }
+        
+        setCategories(loadedCategories);
+        setBudgets(data.budgets || []);
+        setRecurringTransactions(data.recurringTransactions || []);
+        setGoals(data.goals || []);
+        const savedSettings = data.settings || { currency: 'USD', theme: 'light' };
+        setSettings(savedSettings);
+        // Apply theme immediately
+        document.documentElement.setAttribute('data-theme', savedSettings.theme);
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+        // Apply default theme on error
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    } else {
+      // Apply default theme if no saved data
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save data to localStorage whenever data changes (but not during initial load)
+  useEffect(() => {
+    if (!isInitialized) return; // Don't save during initial load
+    
+    const dataToSave = {
+      transactions,
+      categories,
+      budgets,
+      recurringTransactions,
+      goals,
+      settings
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [transactions, categories, budgets, recurringTransactions, goals, settings, isInitialized]);
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', settings.theme);
+  }, [settings.theme]);
+
+  // Handle header hide/show and nav effects on scroll
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let isScrollingDown = false;
+
+    const updateNavPosition = () => {
+      const header = document.querySelector('.header');
+      const nav = document.querySelector('.nav');
+      
+      if (header && nav) {
+        if (header.classList.contains('hidden')) {
+          // When header is hidden, nav sticks to top
+          nav.style.top = '0px';
+          nav.classList.add('header-hidden');
+        } else {
+          // When header is visible, nav sticks below header
+          const headerHeight = header.offsetHeight;
+          nav.style.top = `${headerHeight}px`;
+          nav.classList.remove('header-hidden');
+        }
+      }
+    };
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const header = document.querySelector('.header');
+      const nav = document.querySelector('.nav');
+      
+      // Determine scroll direction
+      isScrollingDown = currentScrollY > lastScrollY;
+      
+      // Header visibility logic
+      if (header) {
+        const wasHidden = header.classList.contains('hidden');
+        
+        if (currentScrollY > 100 && isScrollingDown) {
+          // Hide header when scrolling down after 100px
+          header.classList.add('hidden');
+        } else if (!isScrollingDown || currentScrollY < 50) {
+          // Show header when scrolling up or near top
+          header.classList.remove('hidden');
+        }
+        
+        // Update nav position if header visibility changed
+        const isHidden = header.classList.contains('hidden');
+        if (wasHidden !== isHidden) {
+          updateNavPosition();
+        }
+        
+        // Add scrolled class for enhanced shadow
+        if (currentScrollY > 10) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      }
+      
+      // Navigation effects
+      if (nav) {
+        if (currentScrollY > 10) {
+          nav.classList.add('scrolled');
+        } else {
+          nav.classList.remove('scrolled');
+        }
+      }
+      
+      lastScrollY = currentScrollY;
+    };
+
+    // Set initial nav position
+    updateNavPosition();
+    
+    // Handle resize
+    const handleResize = () => {
+      updateNavPosition();
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const addTransaction = (transaction) => {
+    const newTransaction = {
+      ...transaction,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
+    setShowTransactionForm(false);
+  };
+
+  const updateTransaction = (updatedTransaction) => {
+    setTransactions(prev =>
+      prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t)
+    );
+    setEditingTransaction(null);
+    setShowTransactionForm(false);
+  };
+
+  const deleteTransaction = async (id) => {
+    // Find the transaction to get details for confirmation
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) return;
+
+    const category = categories.find(c => c.id === transaction.categoryId);
+    const categoryName = category ? category.name : 'Unknown Category';
+    
+    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
+    const amountFormatted = `${transaction.type === 'expense' ? '-' : '+'}${currency.symbol}${Math.abs(transaction.amount).toFixed(2)}`;
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Transaction',
+      message: `Are you sure you want to delete this transaction?\n\n📝 ${transaction.description}\n💰 ${amountFormatted}\n🏷️ ${categoryName}\n📅 ${new Date(transaction.date).toLocaleDateString()}\n\nThis action cannot be undone.`,
+      confirmText: 'Delete Transaction',
+      cancelText: 'Cancel',
+      type: 'confirm',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      
+      await modal.showAlert({
+        title: 'Transaction Deleted',
+        message: 'The transaction has been successfully deleted.',
+        type: 'success'
+      });
+    }
+  };
+
+  const addCategory = (category) => {
+    const newCategory = {
+      ...category,
+      id: Date.now().toString()
+    };
+    setCategories(prev => [...prev, newCategory]);
+  };
+
+  const updateCategory = (updatedCategory) => {
+    setCategories(prev =>
+      prev.map(c => c.id === updatedCategory.id ? updatedCategory : c)
+    );
+  };
+
+  const deleteCategory = async (id) => {
+    // Find the category to get details for confirmation
+    const category = categories.find(c => c.id === id);
+    if (!category) return;
+
+    // Check how many transactions use this category
+    const relatedTransactions = transactions.filter(t => t.categoryId === id);
+    const relatedBudgets = budgets.filter(b => b.categoryId === id);
+    
+    let warningMessage = `Are you sure you want to delete the category "${category.name}"?\n\n`;
+    
+    if (relatedTransactions.length > 0) {
+      warningMessage += `⚠️ This will affect ${relatedTransactions.length} transaction(s) using this category.\n`;
+    }
+    
+    if (relatedBudgets.length > 0) {
+      warningMessage += `⚠️ This will also delete ${relatedBudgets.length} budget(s) for this category.\n`;
+    }
+    
+    warningMessage += `\nThis action cannot be undone.`;
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Category',
+      message: warningMessage,
+      confirmText: 'Delete Category',
+      cancelText: 'Cancel',
+      type: 'warning',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      // Remove the category
+      setCategories(prev => prev.filter(c => c.id !== id));
+      
+      // Remove related budgets
+      if (relatedBudgets.length > 0) {
+        setBudgets(prev => prev.filter(b => b.categoryId !== id));
+      }
+      
+      await modal.showAlert({
+        title: 'Category Deleted',
+        message: `The category "${category.name}" has been successfully deleted.${relatedTransactions.length > 0 ? `\n\n${relatedTransactions.length} transaction(s) will now show "Unknown Category".` : ''}`,
+        type: 'success'
+      });
+    }
+  };
+
+  const addBudget = (budget) => {
+    const newBudget = {
+      ...budget,
+      id: Date.now().toString()
+    };
+    setBudgets(prev => [...prev, newBudget]);
+  };
+
+  const updateBudget = (updatedBudget) => {
+    setBudgets(prev =>
+      prev.map(b => b.id === updatedBudget.id ? updatedBudget : b)
+    );
+  };
+
+  const deleteBudget = async (id) => {
+    // Find the budget to get details for confirmation
+    const budget = budgets.find(b => b.id === id);
+    if (!budget) return;
+
+    const category = categories.find(c => c.id === budget.categoryId);
+    const categoryName = category ? category.name : 'Unknown Category';
+    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Budget',
+      message: `Are you sure you want to delete this budget?\n\n📊 ${budget.name || categoryName + ' Budget'}\n💰 ${currency.symbol}${budget.amount.toFixed(2)} per ${budget.period}\n🏷️ ${categoryName}\n\nThis action cannot be undone.`,
+      confirmText: 'Delete Budget',
+      cancelText: 'Cancel',
+      type: 'confirm',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      setBudgets(prev => prev.filter(b => b.id !== id));
+      
+      await modal.showAlert({
+        title: 'Budget Deleted',
+        message: 'The budget has been successfully deleted.',
+        type: 'success'
+      });
+    }
+  };
+
+  // Recurring Transactions handlers
+  const addRecurringTransaction = (recurringTransaction) => {
+    setRecurringTransactions(prev => [...prev, recurringTransaction]);
+  };
+
+  const updateRecurringTransaction = (updatedRecurring) => {
+    setRecurringTransactions(prev => prev.map(r => 
+      r.id === updatedRecurring.id ? updatedRecurring : r
+    ));
+  };
+
+  const deleteRecurringTransaction = async (id) => {
+    const recurring = recurringTransactions.find(r => r.id === id);
+    if (!recurring) return;
+
+    const category = categories.find(c => c.id === recurring.categoryId);
+    const categoryName = category ? category.name : 'Unknown Category';
+    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Recurring Transaction',
+      message: `Are you sure you want to delete this recurring transaction?\n\n📋 ${recurring.description}\n💰 ${currency.symbol}${recurring.amount.toFixed(2)}\n🔄 ${recurring.frequency.charAt(0).toUpperCase() + recurring.frequency.slice(1)}\n🏷️ ${categoryName}\n\nThis will not affect already generated transactions.`,
+      confirmText: 'Delete Recurring Transaction',
+      cancelText: 'Cancel',
+      type: 'confirm',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      setRecurringTransactions(prev => prev.filter(r => r.id !== id));
+      
+      await modal.showAlert({
+        title: 'Recurring Transaction Deleted',
+        message: 'The recurring transaction has been successfully deleted.',
+        type: 'success'
+      });
+    }
+  };
+
+  const toggleRecurringTransactionActive = (id, isActive) => {
+    setRecurringTransactions(prev => prev.map(r => 
+      r.id === id ? { ...r, isActive } : r
+    ));
+  };
+
+  // Function to generate transactions from recurring transactions
+  const generateRecurringTransactions = () => {
+    const today = new Date();
+    const newTransactions = [];
+
+    recurringTransactions
+      .filter(recurring => recurring.isActive)
+      .forEach(recurring => {
+        const startDate = new Date(recurring.startDate);
+        const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
+
+        // Skip if end date has passed
+        if (endDate && today > endDate) return;
+
+        // Skip if start date is in the future
+        if (startDate > today) return;
+
+        // Check if we need to generate a transaction for today
+        const shouldGenerate = shouldGenerateTransaction(recurring, today);
+        
+        if (shouldGenerate) {
+          // Check if transaction already exists for today
+          const todayDateString = today.toISOString().split('T')[0];
+          const existingTransaction = transactions.find(t => 
+            t.date === todayDateString && 
+            t.recurringId === recurring.id
+          );
+
+          if (!existingTransaction) {
+            const newTransaction = {
+              id: Date.now().toString() + '_' + recurring.id,
+              type: recurring.type,
+              amount: recurring.amount,
+              description: `${recurring.description} (Auto)`,
+              categoryId: recurring.categoryId,
+              date: todayDateString,
+              recurringId: recurring.id,
+              notes: recurring.notes || '',
+              createdAt: new Date().toISOString()
+            };
+            newTransactions.push(newTransaction);
+          }
+        }
+      });
+
+    if (newTransactions.length > 0) {
+      setTransactions(prev => [...prev, ...newTransactions]);
+      console.log(`Generated ${newTransactions.length} recurring transactions`);
+    }
+  };
+
+  // Helper function to determine if a transaction should be generated
+  const shouldGenerateTransaction = (recurring, date) => {
+    const startDate = new Date(recurring.startDate);
+    
+    switch (recurring.frequency) {
+      case 'daily':
+        return date >= startDate;
+      
+      case 'weekly':
+        return date >= startDate && date.getDay() === recurring.dayOfWeek;
+      
+      case 'monthly':
+        const targetDay = Math.min(recurring.dayOfMonth, getLastDayOfMonth(date));
+        return date >= startDate && date.getDate() === targetDay;
+      
+      case 'yearly':
+        return date >= startDate && 
+               date.getMonth() === startDate.getMonth() && 
+               date.getDate() === startDate.getDate();
+      
+      default:
+        return false;
+    }
+  };
+
+  // Helper function to get last day of month
+  const getLastDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  // Generate recurring transactions on app load and daily
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    generateRecurringTransactions();
+    
+    // Set up daily check (every 24 hours)
+    const interval = setInterval(generateRecurringTransactions, 24 * 60 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [isInitialized, recurringTransactions]);
+
+  // Scroll to top when navigating between tabs
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
+  // Goal management functions
+  const addGoal = (goal) => {
+    const newGoal = {
+      ...goal,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    setGoals(prev => [...prev, newGoal]);
+  };
+
+  const updateGoal = (updatedGoal) => {
+    setGoals(prev => prev.map(goal => 
+      goal.id === updatedGoal.id ? updatedGoal : goal
+    ));
+  };
+
+  const deleteGoal = async (id) => {
+    // Find the goal to get details for confirmation
+    const goal = goals.find(g => g.id === id);
+    if (!goal) return;
+
+    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Goal',
+      message: `Are you sure you want to delete this goal?\n\n🎯 ${goal.name}\n💰 Target: ${currency.symbol}${goal.targetAmount.toFixed(2)}\n📅 Due: ${new Date(goal.targetDate).toLocaleDateString()}\n\nThis will permanently remove the goal and all its contribution history.`,
+      confirmText: 'Delete Goal',
+      cancelText: 'Cancel',
+      type: 'confirm',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      setGoals(prev => prev.filter(g => g.id !== id));
+      
+      await modal.showAlert({
+        title: 'Goal Deleted',
+        message: 'The goal has been successfully deleted.',
+        type: 'success'
+      });
+    }
+  };
+
+  const toggleTheme = () => {
+    setSettings(prev => ({
+      ...prev,
+      theme: prev.theme === 'light' ? 'dark' : 'light'
+    }));
+  };
+
+  const exportData = async () => {
+    const exportStats = {
+      transactions: transactions.length,
+      categories: categories.length,
+      budgets: budgets.length,
+      recurringTransactions: recurringTransactions.length,
+      goals: goals.length,
+      settings: Object.keys(settings).length
+    };
+    
+    const message = `This will download a JSON file containing:\n\n• ${exportStats.transactions} transactions\n• ${exportStats.categories} categories\n• ${exportStats.budgets} budgets\n• ${exportStats.recurringTransactions} recurring transactions\n• ${exportStats.goals} goals\n• Your settings (theme, currency)`;
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Export CashPilot Data',
+      message: message,
+      confirmText: 'Download',
+      cancelText: 'Cancel',
+      type: 'info'
+    });
+    
+    if (!confirmed) return;
+    
+    const dataToExport = {
+      transactions,
+      categories,
+      budgets,
+      recurringTransactions,
+      goals,
+      settings,
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cash-pilot-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Show success message
+    await modal.showAlert({
+      title: 'Export Successful',
+      message: 'Your data has been exported successfully!',
+      type: 'success'
+    });
+  };
+
+  const importData = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          let importedItems = [];
+          
+          // Import data with validation
+          if (importedData.transactions && Array.isArray(importedData.transactions)) {
+            setTransactions(importedData.transactions);
+            importedItems.push(`${importedData.transactions.length} transactions`);
+          }
+          
+          if (importedData.categories && Array.isArray(importedData.categories)) {
+            setCategories(importedData.categories);
+            importedItems.push(`${importedData.categories.length} categories`);
+          }
+          
+          if (importedData.budgets && Array.isArray(importedData.budgets)) {
+            setBudgets(importedData.budgets);
+            importedItems.push(`${importedData.budgets.length} budgets`);
+          }
+          
+          if (importedData.recurringTransactions && Array.isArray(importedData.recurringTransactions)) {
+            setRecurringTransactions(importedData.recurringTransactions);
+            importedItems.push(`${importedData.recurringTransactions.length} recurring transactions`);
+          }
+          
+          if (importedData.goals && Array.isArray(importedData.goals)) {
+            setGoals(importedData.goals);
+            importedItems.push(`${importedData.goals.length} goals`);
+          }
+          
+          if (importedData.settings && typeof importedData.settings === 'object') {
+            setSettings(prev => ({ ...prev, ...importedData.settings }));
+            importedItems.push('settings');
+          }
+          
+          if (importedItems.length > 0) {
+            await modal.showAlert({
+              title: 'Import Successful',
+              message: `Data imported successfully!\n\nImported: ${importedItems.join(', ')}`,
+              type: 'success'
+            });
+          } else {
+            await modal.showAlert({
+              title: 'No Data Found',
+              message: 'No valid data found in the file. Please check the file format.',
+              type: 'warning'
+            });
+          }
+        } catch (error) {
+          await modal.showAlert({
+            title: 'Import Failed',
+            message: 'Error importing data. Please check that the file is a valid JSON format.',
+            type: 'error'
+          });
+        }
+      };
+      reader.readAsText(file);
+    }
+    // Reset the file input so the same file can be selected again
+    event.target.value = '';
+  };
+
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: PieChart },
+    { id: 'transactions', label: 'Transactions', icon: Wallet },
+    { id: 'budgets', label: 'Budgets', icon: Target },
+    { id: 'recurring', label: 'Recurring', icon: Repeat },
+    { id: 'goals', label: 'Goals', icon: Flag },
+    { id: 'categories', label: 'Categories', icon: Folder },
+    { id: 'insights', label: 'Insights & Reports', icon: TrendingUp },
+  ];
+
+  return (
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div className="header-content">
+          <div className="header-left">
+            <div className="logo" onClick={() => setActiveTab('dashboard')}>
+              <div className="logo-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Wallet Body */}
+                  <path
+                    d="M4 8C4 6.89543 4.89543 6 6 6H24C25.1046 6 26 6.89543 26 8V24C26 25.1046 25.1046 26 24 26H6C4.89543 26 4 25.1046 4 24V8Z"
+                    fill="currentColor"
+                    fillOpacity="0.1"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  {/* Wallet Flap */}
+                  <path
+                    d="M4 8V12C4 13.1046 4.89543 14 6 14H20C21.1046 14 22 13.1046 22 12V10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  {/* Coin */}
+                  <circle
+                    cx="19"
+                    cy="5"
+                    r="4"
+                    fill="var(--primary-color)"
+                    stroke="var(--primary-dark)"
+                    strokeWidth="1"
+                  />
+                  {/* Dollar Sign on Coin */}
+                  <path
+                    d="M18.5 3V7M19.5 3V7M17.5 4.5H20.5C20.7761 4.5 21 4.72386 21 5C21 5.27614 20.7761 5.5 20.5 5.5H17.5C17.2239 5.5 17 5.72386 17 6C17 6.27614 17.2239 6.5 17.5 6.5H20.5"
+                    stroke="white"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* Wallet Details */}
+                  <rect
+                    x="7"
+                    y="17"
+                    width="12"
+                    height="1.5"
+                    rx="0.75"
+                    fill="currentColor"
+                    fillOpacity="0.3"
+                  />
+                  <rect
+                    x="7"
+                    y="20"
+                    width="8"
+                    height="1.5"
+                    rx="0.75"
+                    fill="currentColor"
+                    fillOpacity="0.2"
+                  />
+                </svg>
+              </div>
+              <h1>CashPilot</h1>
+            </div>
+          </div>
+          <div className="header-right">
+            <button onClick={toggleTheme} className="icon-button" title="Toggle theme">
+              {settings.theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+            <button onClick={exportData} className="icon-button" title="Export data">
+              <Download size={20} />
+            </button>
+            <label className="icon-button" title="Import data">
+              <Upload size={20} />
+              <input type="file" accept=".json" onChange={importData} style={{ display: 'none' }} />
+            </label>
+            <select 
+              value={settings.currency} 
+              onChange={(e) => setSettings(prev => ({ ...prev, currency: e.target.value }))}
+              className="currency-select"
+            >
+              {currencies.map(currency => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.code}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="nav">
+        <div className="nav-content">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`nav-button ${activeTab === tab.id ? 'active' : ''}`}
+              >
+                <Icon size={20} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="main">
+        <div className="main-content">
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              transactions={transactions}
+              categories={categories}
+              budgets={budgets}
+              goals={goals}
+              recurringTransactions={recurringTransactions}
+              currency={settings.currency}
+              onNavigateToTab={setActiveTab}
+            />
+          )}
+          
+          {activeTab === 'transactions' && (
+            <div>
+              <div className="page-header">
+                <h2>Transactions</h2>
+                <button 
+                  onClick={() => {
+                    setEditingTransaction(null);
+                    setShowTransactionForm(true);
+                  }}
+                  className="add-button"
+                >
+                  <PlusCircle size={20} />
+                  Add Transaction
+                </button>
+              </div>
+              <TransactionList
+                transactions={transactions}
+                categories={categories}
+                currency={settings.currency}
+                onEdit={(transaction) => {
+                  setEditingTransaction(transaction);
+                  setShowTransactionForm(true);
+                }}
+                onDelete={deleteTransaction}
+              />
+            </div>
+          )}
+          
+          {activeTab === 'categories' && (
+            <Categories
+              categories={categories}
+              onAdd={addCategory}
+              onUpdate={updateCategory}
+              onDelete={deleteCategory}
+            />
+          )}
+          
+          {activeTab === 'budgets' && (
+            <Budgets
+              budgets={budgets}
+              categories={categories}
+              transactions={transactions}
+              currency={settings.currency}
+              onAdd={addBudget}
+              onUpdate={updateBudget}
+              onDelete={deleteBudget}
+            />
+          )}
+          
+          {activeTab === 'recurring' && (
+            <RecurringTransactions
+              recurringTransactions={recurringTransactions}
+              categories={categories}
+              currency={settings.currency}
+              onAdd={addRecurringTransaction}
+              onUpdate={updateRecurringTransaction}
+              onDelete={deleteRecurringTransaction}
+              onToggleActive={toggleRecurringTransactionActive}
+            />
+          )}
+          
+          {activeTab === 'insights' && (
+            <SpendingInsights
+              transactions={transactions}
+              categories={categories}
+              budgets={budgets}
+              currency={settings.currency}
+            />
+          )}
+          
+          {activeTab === 'goals' && (
+            <GoalTracking
+              goals={goals}
+              transactions={transactions}
+              currency={settings.currency}
+              categories={categories}
+              onAdd={addGoal}
+              onUpdate={updateGoal}
+              onDelete={deleteGoal}
+              onAddTransaction={addTransaction}
+            />
+          )}
+        </div>
+      </main>
+
+      {/* Transaction Form Modal */}
+      {showTransactionForm && (
+        <div className="modal-overlay" onClick={() => setShowTransactionForm(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <TransactionForm
+              transaction={editingTransaction}
+              categories={categories}
+              currency={settings.currency}
+              onSubmit={editingTransaction ? updateTransaction : addTransaction}
+              onCancel={() => {
+                setShowTransactionForm(false);
+                setEditingTransaction(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Professional Modal System */}
+      {modal.modalProps.modalType === 'alert' && (
+        <Alert
+          isOpen={modal.isOpen}
+          onClose={modal.closeModal}
+          title={modal.modalProps.title}
+          message={modal.modalProps.message}
+          type={modal.modalProps.type}
+        />
+      )}
+
+      {modal.modalProps.modalType === 'confirm' && (
+        <Confirm
+          isOpen={modal.isOpen}
+          onClose={modal.closeModal}
+          onConfirm={modal.confirmModal}
+          title={modal.modalProps.title}
+          message={modal.modalProps.message}
+          confirmText={modal.modalProps.confirmText}
+          cancelText={modal.modalProps.cancelText}
+          type={modal.modalProps.type}
+          isDestructive={modal.modalProps.isDestructive}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;

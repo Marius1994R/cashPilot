@@ -1,0 +1,46 @@
+{
+  "transactions": [
+    {
+      "id": "1",
+      "type": "expense",
+      "amount": 50.00,
+      "description": "Lunch",
+      "categoryId": "1",
+      "date": "2024-01-15"
+    },
+    {
+      "id": "2",
+      "type": "income",
+      "amount": 2500.00,
+      "description": "Salary"
+      "categoryId": "7",  // Missing comma here - syntax error
+      "date": "2024-01-15"
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Food & Dining",
+      "color": "#ef4444",
+      "type": "expense"
+    },
+    {
+      "id": "7",
+      "name": "Salary",
+      "color": "#10b981"
+      "type": "income"  // Missing comma here - syntax error
+    }
+  ],
+  "budgets": [
+    {
+      "id": "1",
+      "categoryId": "1",
+      "amount": 500.00,
+      "period": "monthly"
+    }  // Missing closing bracket
+  "settings": {
+    "currency": "USD",
+    "theme": "light"
+  },
+  "exportDate": "2025-01-29T10:30:15.245Z"
+}  // Missing closing bracket for main object

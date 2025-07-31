@@ -1,0 +1,191 @@
+{
+  "transactions": [
+    {
+      "id": "1",
+      "type": "expense",
+      "amount": 25.50,
+      "description": "Coffee shop breakfast",
+      "categoryId": "1",
+      "date": "2025-01-25",
+      "notes": "Morning coffee and croissant"
+    },
+    {
+      "id": "2",
+      "type": "expense",
+      "amount": 85.00,
+      "description": "Gas station fill-up",
+      "categoryId": "2",
+      "date": "2025-01-24",
+      "notes": "Full tank for weekend trip"
+    },
+    {
+      "id": "3",
+      "type": "expense",
+      "amount": 120.75,
+      "description": "Grocery shopping",
+      "categoryId": "1",
+      "date": "2025-01-23",
+      "notes": "Weekly groceries at supermarket"
+    },
+    {
+      "id": "4",
+      "type": "income",
+      "amount": 3500.00,
+      "description": "Monthly salary",
+      "categoryId": "7",
+      "date": "2025-01-01",
+      "notes": "January salary payment"
+    },
+    {
+      "id": "5",
+      "type": "expense",
+      "amount": 45.99,
+      "description": "Movie tickets",
+      "categoryId": "4",
+      "date": "2025-01-22",
+      "notes": "Date night at cinema"
+    },
+    {
+      "id": "6",
+      "type": "expense",
+      "amount": 200.00,
+      "description": "Electric bill",
+      "categoryId": "5",
+      "date": "2025-01-20",
+      "notes": "Monthly electricity payment"
+    },
+    {
+      "id": "7",
+      "type": "income",
+      "amount": 150.00,
+      "description": "Freelance design work",
+      "categoryId": "8",
+      "date": "2025-01-19",
+      "notes": "Logo design project"
+    },
+    {
+      "id": "8",
+      "type": "expense",
+      "amount": 89.50,
+      "description": "Doctor consultation",
+      "categoryId": "6",
+      "date": "2025-01-18",
+      "notes": "Annual checkup"
+    },
+    {
+      "id": "9",
+      "type": "expense",
+      "amount": 65.30,
+      "description": "New shirt",
+      "categoryId": "3",
+      "date": "2025-01-17",
+      "notes": "Business shirt for work"
+    },
+    {
+      "id": "10",
+      "type": "income",
+      "amount": 75.00,
+      "description": "Dividend payment",
+      "categoryId": "9",
+      "date": "2025-01-15",
+      "notes": "Quarterly dividends from stocks"
+    }
+  ],
+  "categories": [
+    {
+      "id": "1",
+      "name": "Food & Dining",
+      "color": "#ef4444",
+      "type": "expense"
+    },
+    {
+      "id": "2",
+      "name": "Transportation",
+      "color": "#f97316",
+      "type": "expense"
+    },
+    {
+      "id": "3",
+      "name": "Shopping",
+      "color": "#eab308",
+      "type": "expense"
+    },
+    {
+      "id": "4",
+      "name": "Entertainment",
+      "color": "#22c55e",
+      "type": "expense"
+    },
+    {
+      "id": "5",
+      "name": "Bills & Utilities",
+      "color": "#3b82f6",
+      "type": "expense"
+    },
+    {
+      "id": "6",
+      "name": "Healthcare",
+      "color": "#8b5cf6",
+      "type": "expense"
+    },
+    {
+      "id": "7",
+      "name": "Salary & Wages",
+      "color": "#10b981",
+      "type": "income"
+    },
+    {
+      "id": "8",
+      "name": "Business Income",
+      "color": "#059669",
+      "type": "income"
+    },
+    {
+      "id": "9",
+      "name": "Investments",
+      "color": "#0891b2",
+      "type": "income"
+    },
+    {
+      "id": "10",
+      "name": "Travel",
+      "color": "#dc2626",
+      "type": "expense"
+    }
+  ],
+  "budgets": [
+    {
+      "id": "1",
+      "categoryId": "1",
+      "name": "Food Budget",
+      "amount": 500.00,
+      "period": "monthly"
+    },
+    {
+      "id": "2",
+      "categoryId": "2",
+      "name": "Transportation Budget",
+      "amount": 300.00,
+      "period": "monthly"
+    },
+    {
+      "id": "3",
+      "categoryId": "4",
+      "name": "Entertainment Budget",
+      "amount": 200.00,
+      "period": "monthly"
+    },
+    {
+      "id": "4",
+      "categoryId": "5",
+      "name": "Utilities Budget",
+      "amount": 400.00,
+      "period": "monthly"
+    }
+  ],
+  "settings": {
+    "currency": "EUR",
+    "theme": "dark"
+  },
+  "exportDate": "2025-01-29T10:30:15.245Z"
+}

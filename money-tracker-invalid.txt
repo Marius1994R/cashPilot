@@ -1,0 +1,26 @@
+MONEY TRACKER DATA EXPORT
+=========================
+
+Date: January 29, 2025
+Account: Personal Finance
+
+TRANSACTIONS:
+-------------
+ID: 1, Type: Expense, Amount: $50.00, Description: Lunch, Category: Food & Dining, Date: 2024-01-15
+ID: 2, Type: Income, Amount: $2500.00, Description: Salary, Category: Salary, Date: 2024-01-15
+
+CATEGORIES:
+-----------
+Food & Dining (#ef4444) - Expense
+Salary (#10b981) - Income
+
+BUDGETS:
+--------
+Food Budget: $500.00 monthly
+
+SETTINGS:
+---------
+Currency: USD
+Theme: Light
+
+END OF EXPORT
