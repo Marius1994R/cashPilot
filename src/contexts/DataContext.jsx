@@ -88,34 +88,26 @@ export const DataProvider = ({ children }) => {
 
       setTransactions(transactionsData || []);
       
-      // Use user categories if available, otherwise use defaults
-      const userCategories = categoriesData && categoriesData.length > 0 
-        ? categoriesData 
-        : defaultCategories;
-      
-      // Ensure Savings category exists
-      const hasSavingsCategory = userCategories.some(cat => cat.name === 'Savings');
-      if (!hasSavingsCategory) {
-        // Create Savings category in Firebase
-        const savingsCategory = {
-          name: 'Savings',
-          color: '#10b981',
-          type: 'expense'
-        };
-        try {
-          const newSavingsCategory = await categoryService.create(savingsCategory, user.uid);
-          userCategories.push(newSavingsCategory);
-        } catch (error) {
-          console.error('Error creating Savings category:', error);
-          // Fallback to adding locally if Firebase fails
-          userCategories.push({
-            id: 'savings-fallback',
-            ...savingsCategory
-          });
+      // If user has no categories, create default categories in Firebase (new users only)
+      if (!categoriesData || categoriesData.length === 0) {
+        console.log('New user detected, creating default categories in Firebase...');
+        const createdCategories = [];
+        
+        for (const defaultCategory of defaultCategories) {
+          try {
+            const { id, ...categoryData } = defaultCategory; // Remove the hardcoded id
+            const newCategory = await categoryService.create(categoryData, user.uid);
+            createdCategories.push(newCategory);
+          } catch (error) {
+            console.error('Error creating default category:', defaultCategory.name, error);
+          }
         }
+        
+        setCategories(createdCategories);
+      } else {
+        // Use existing user categories
+        setCategories(categoriesData);
       }
-      
-      setCategories(userCategories);
       setBudgets(budgetsData || []);
       setRecurringTransactions(recurringData || []);
       setGoals(goalsData || []);

@@ -14,7 +14,7 @@ const DebugPanel = () => {
     loading, 
     error,
     addTransaction,
-    addCategory 
+    addCategory
   } = useData();
   
   const [debugInfo, setDebugInfo] = useState('');
