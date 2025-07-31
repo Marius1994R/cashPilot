@@ -28,6 +28,7 @@ import {
   User
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DataProvider, useData } from './contexts/DataContext';
 import AuthForm from './components/Auth/AuthForm';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
@@ -42,104 +43,70 @@ import Confirm from './components/Confirm';
 import { currencies } from './utils/currencies';
 import { useModal } from './hooks/useModal';
 
-const STORAGE_KEY = 'cash-pilot-data';
 
-const defaultCategories = [
-  { id: '1', name: 'Food & Dining', color: '#ef4444', type: 'expense' },
-  { id: '2', name: 'Transportation', color: '#f97316', type: 'expense' },
-  { id: '3', name: 'Shopping', color: '#eab308', type: 'expense' },
-  { id: '4', name: 'Entertainment', color: '#22c55e', type: 'expense' },
-  { id: '5', name: 'Bills & Utilities', color: '#3b82f6', type: 'expense' },
-  { id: '6', name: 'Healthcare', color: '#8b5cf6', type: 'expense' },
-  { id: '7', name: 'Savings', color: '#10b981', type: 'expense' },
-  { id: '8', name: 'Salary', color: '#059669', type: 'income' },
-  { id: '9', name: 'Business', color: '#0891b2', type: 'income' },
-  { id: '10', name: 'Investments', color: '#06b6d4', type: 'income' },
-];
 
 // Main authenticated app component
 function AuthenticatedApp() {
   const { currentUser, logout } = useAuth();
+  const {
+    transactions,
+    categories,
+    budgets,
+    recurringTransactions,
+    goals,
+    settings,
+    loading,
+    error,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addBudget,
+    updateBudget,
+    deleteBudget,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    addRecurringTransaction,
+    updateRecurringTransaction,
+    deleteRecurringTransaction,
+    updateSettings,
+    clearError
+  } = useData();
+  
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState(defaultCategories);
-  const [budgets, setBudgets] = useState([]);
-  const [recurringTransactions, setRecurringTransactions] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [settings, setSettings] = useState({
-    currency: 'USD',
-    theme: 'light'
-  });
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Modal hook for professional notifications
   const modal = useModal();
 
-  // Load data from localStorage on app start
-  useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    
-    if (savedData && savedData !== 'undefined') {
-      try {
-        const data = JSON.parse(savedData);
-        setTransactions(data.transactions || []);
-        
-        // Ensure Savings category exists
-        const loadedCategories = data.categories || defaultCategories;
-        const hasSavingsCategory = loadedCategories.some(cat => cat.name === 'Savings');
-        
-        if (!hasSavingsCategory) {
-          const maxId = Math.max(...loadedCategories.map(cat => parseInt(cat.id) || 0));
-          const savingsCategory = {
-            id: (maxId + 1).toString(),
-            name: 'Savings',
-            color: '#10b981',
-            type: 'expense'
-          };
-          loadedCategories.push(savingsCategory);
-        }
-        
-        setCategories(loadedCategories);
-        setBudgets(data.budgets || []);
-        setRecurringTransactions(data.recurringTransactions || []);
-        setGoals(data.goals || []);
-        const savedSettings = data.settings || { currency: 'USD', theme: 'light' };
-        setSettings(savedSettings);
-        // Apply theme immediately
-        document.documentElement.setAttribute('data-theme', savedSettings.theme);
-      } catch (error) {
-        console.error('Error loading saved data:', error);
-        // Apply default theme on error
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    } else {
-      // Apply default theme if no saved data
-      document.documentElement.setAttribute('data-theme', 'light');
-    }
-    setIsInitialized(true);
-  }, []);
+  // Show loading state while Firebase data is loading
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading your financial data...</p>
+      </div>
+    );
+  }
 
-  // Save data to localStorage whenever data changes (but not during initial load)
-  useEffect(() => {
-    if (!isInitialized) return; // Don't save during initial load
-    
-    const dataToSave = {
-      transactions,
-      categories,
-      budgets,
-      recurringTransactions,
-      goals,
-      settings
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [transactions, categories, budgets, recurringTransactions, goals, settings, isInitialized]);
-
-  // Apply theme
+  // Apply theme when settings change
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
   }, [settings.theme]);
+
+  // Clear error when user interacts
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   // Handle header hide/show and nav effects on scroll
   useEffect(() => {
@@ -227,25 +194,46 @@ function AuthenticatedApp() {
     };
   }, []);
 
-  const addTransaction = (transaction) => {
-    const newTransaction = {
-      ...transaction,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-    setShowTransactionForm(false);
+  const handleAddTransaction = async (transaction) => {
+    try {
+      await addTransaction(transaction);
+      setShowTransactionForm(false);
+      
+      await modal.showAlert({
+        title: 'Transaction Added',
+        message: 'Transaction has been successfully saved to your account.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to add transaction. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const updateTransaction = (updatedTransaction) => {
-    setTransactions(prev =>
-      prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t)
-    );
-    setEditingTransaction(null);
-    setShowTransactionForm(false);
+  const handleUpdateTransaction = async (updatedTransaction) => {
+    try {
+      await updateTransaction(updatedTransaction.id, updatedTransaction);
+      setEditingTransaction(null);
+      setShowTransactionForm(false);
+      
+      await modal.showAlert({
+        title: 'Transaction Updated',
+        message: 'Transaction has been successfully updated.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to update transaction. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const deleteTransaction = async (id) => {
+  const handleDeleteTransaction = async (id) => {
     // Find the transaction to get details for confirmation
     const transaction = transactions.find(t => t.id === id);
     if (!transaction) return;
@@ -266,31 +254,61 @@ function AuthenticatedApp() {
     });
 
     if (confirmed) {
-      setTransactions(prev => prev.filter(t => t.id !== id));
+      try {
+        await deleteTransaction(id);
+        
+        await modal.showAlert({
+          title: 'Transaction Deleted',
+          message: 'The transaction has been successfully deleted.',
+          type: 'success'
+        });
+      } catch (error) {
+        await modal.showAlert({
+          title: 'Error',
+          message: 'Failed to delete transaction. Please try again.',
+          type: 'error'
+        });
+      }
+    }
+  };
+
+  const handleAddCategory = async (category) => {
+    try {
+      await addCategory(category);
       
       await modal.showAlert({
-        title: 'Transaction Deleted',
-        message: 'The transaction has been successfully deleted.',
+        title: 'Category Added',
+        message: 'Category has been successfully created.',
         type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to add category. Please try again.',
+        type: 'error'
       });
     }
   };
 
-  const addCategory = (category) => {
-    const newCategory = {
-      ...category,
-      id: Date.now().toString()
-    };
-    setCategories(prev => [...prev, newCategory]);
+  const handleUpdateCategory = async (updatedCategory) => {
+    try {
+      await updateCategory(updatedCategory.id, updatedCategory);
+      
+      await modal.showAlert({
+        title: 'Category Updated',
+        message: 'Category has been successfully updated.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to update category. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const updateCategory = (updatedCategory) => {
-    setCategories(prev =>
-      prev.map(c => c.id === updatedCategory.id ? updatedCategory : c)
-    );
-  };
-
-  const deleteCategory = async (id) => {
+  const handleDeleteCategory = async (id) => {
     // Find the category to get details for confirmation
     const category = categories.find(c => c.id === id);
     if (!category) return;
@@ -321,37 +339,65 @@ function AuthenticatedApp() {
     });
 
     if (confirmed) {
-      // Remove the category
-      setCategories(prev => prev.filter(c => c.id !== id));
-      
-      // Remove related budgets
-      if (relatedBudgets.length > 0) {
-        setBudgets(prev => prev.filter(b => b.categoryId !== id));
+      try {
+        // Remove the category
+        await deleteCategory(id);
+        
+        // Remove related budgets
+        if (relatedBudgets.length > 0) {
+          await Promise.all(relatedBudgets.map(budget => deleteBudget(budget.id)));
+        }
+        
+        await modal.showAlert({
+          title: 'Category Deleted',
+          message: `The category "${category.name}" has been successfully deleted.${relatedTransactions.length > 0 ? `\n\n${relatedTransactions.length} transaction(s) will now show "Unknown Category".` : ''}`,
+          type: 'success'
+        });
+      } catch (error) {
+        await modal.showAlert({
+          title: 'Error',
+          message: 'Failed to delete category. Please try again.',
+          type: 'error'
+        });
       }
-      
+    }
+  };
+
+  const handleAddBudget = async (budget) => {
+    try {
+      await addBudget(budget);
       await modal.showAlert({
-        title: 'Category Deleted',
-        message: `The category "${category.name}" has been successfully deleted.${relatedTransactions.length > 0 ? `\n\n${relatedTransactions.length} transaction(s) will now show "Unknown Category".` : ''}`,
+        title: 'Budget Added',
+        message: 'Budget has been successfully created.',
         type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to add budget. Please try again.',
+        type: 'error'
       });
     }
   };
 
-  const addBudget = (budget) => {
-    const newBudget = {
-      ...budget,
-      id: Date.now().toString()
-    };
-    setBudgets(prev => [...prev, newBudget]);
+  const handleUpdateBudget = async (updatedBudget) => {
+    try {
+      await updateBudget(updatedBudget.id, updatedBudget);
+      await modal.showAlert({
+        title: 'Budget Updated',
+        message: 'Budget has been successfully updated.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to update budget. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const updateBudget = (updatedBudget) => {
-    setBudgets(prev =>
-      prev.map(b => b.id === updatedBudget.id ? updatedBudget : b)
-    );
-  };
-
-  const deleteBudget = async (id) => {
+  const handleDeleteBudget = async (id) => {
     // Find the budget to get details for confirmation
     const budget = budgets.find(b => b.id === id);
     if (!budget) return;
@@ -370,28 +416,112 @@ function AuthenticatedApp() {
     });
 
     if (confirmed) {
-      setBudgets(prev => prev.filter(b => b.id !== id));
-      
+      try {
+        await deleteBudget(id);
+        
+        await modal.showAlert({
+          title: 'Budget Deleted',
+          message: 'The budget has been successfully deleted.',
+          type: 'success'
+        });
+      } catch (error) {
+        await modal.showAlert({
+          title: 'Error',
+          message: 'Failed to delete budget. Please try again.',
+          type: 'error'
+        });
+      }
+    }
+  };
+
+  // Goal handlers
+  const handleAddGoal = async (goal) => {
+    try {
+      await addGoal(goal);
       await modal.showAlert({
-        title: 'Budget Deleted',
-        message: 'The budget has been successfully deleted.',
+        title: 'Goal Added',
+        message: 'Goal has been successfully created.',
         type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to add goal. Please try again.',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleUpdateGoal = async (updatedGoal) => {
+    try {
+      await updateGoal(updatedGoal.id, updatedGoal);
+      await modal.showAlert({
+        title: 'Goal Updated',
+        message: 'Goal has been successfully updated.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to update goal. Please try again.',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleDeleteGoal = async (id) => {
+    try {
+      await deleteGoal(id);
+      await modal.showAlert({
+        title: 'Goal Deleted',
+        message: 'Goal has been successfully deleted.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to delete goal. Please try again.',
+        type: 'error'
       });
     }
   };
 
   // Recurring Transactions handlers
-  const addRecurringTransaction = (recurringTransaction) => {
-    setRecurringTransactions(prev => [...prev, recurringTransaction]);
+  const handleAddRecurringTransaction = async (recurringTransaction) => {
+    try {
+      await addRecurringTransaction(recurringTransaction);
+      await modal.showAlert({
+        title: 'Recurring Transaction Added',
+        message: 'Recurring transaction has been successfully created.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to add recurring transaction. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const updateRecurringTransaction = (updatedRecurring) => {
-    setRecurringTransactions(prev => prev.map(r => 
-      r.id === updatedRecurring.id ? updatedRecurring : r
-    ));
+  const handleUpdateRecurringTransaction = async (updatedRecurring) => {
+    try {
+      await updateRecurringTransaction(updatedRecurring.id, updatedRecurring);
+      await modal.showAlert({
+        title: 'Recurring Transaction Updated',
+        message: 'Recurring transaction has been successfully updated.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to update recurring transaction. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
-  const deleteRecurringTransaction = async (id) => {
+  const handleDeleteRecurringTransaction = async (id) => {
     const recurring = recurringTransactions.find(r => r.id === id);
     if (!recurring) return;
 
@@ -409,20 +539,55 @@ function AuthenticatedApp() {
     });
 
     if (confirmed) {
-      setRecurringTransactions(prev => prev.filter(r => r.id !== id));
-      
+      try {
+        await deleteRecurringTransaction(id);
+        
+        await modal.showAlert({
+          title: 'Recurring Transaction Deleted',
+          message: 'The recurring transaction has been successfully deleted.',
+          type: 'success'
+        });
+      } catch (error) {
+        await modal.showAlert({
+          title: 'Error',
+          message: 'Failed to delete recurring transaction. Please try again.',
+          type: 'error'
+        });
+      }
+    }
+  };
+
+  const handleToggleRecurringTransactionActive = async (id, isActive) => {
+    try {
+      const recurringTransaction = recurringTransactions.find(r => r.id === id);
+      if (recurringTransaction) {
+        await updateRecurringTransaction(id, { ...recurringTransaction, isActive });
+      }
+    } catch (error) {
       await modal.showAlert({
-        title: 'Recurring Transaction Deleted',
-        message: 'The recurring transaction has been successfully deleted.',
-        type: 'success'
+        title: 'Error',
+        message: 'Failed to update recurring transaction status.',
+        type: 'error'
       });
     }
   };
 
-  const toggleRecurringTransactionActive = (id, isActive) => {
-    setRecurringTransactions(prev => prev.map(r => 
-      r.id === id ? { ...r, isActive } : r
-    ));
+  // Settings handler
+  const handleUpdateSettings = async (newSettings) => {
+    try {
+      await updateSettings(newSettings);
+      await modal.showAlert({
+        title: 'Settings Updated',
+        message: 'Your settings have been successfully saved.',
+        type: 'success'
+      });
+    } catch (error) {
+      await modal.showAlert({
+        title: 'Error',
+        message: 'Failed to save settings. Please try again.',
+        type: 'error'
+      });
+    }
   };
 
   // Function to generate transactions from recurring transactions
@@ -566,11 +731,12 @@ function AuthenticatedApp() {
     }
   };
 
-  const toggleTheme = () => {
-    setSettings(prev => ({
-      ...prev,
-      theme: prev.theme === 'light' ? 'dark' : 'light'
-    }));
+  const toggleTheme = async () => {
+    const newTheme = settings.theme === 'light' ? 'dark' : 'light';
+    await handleUpdateSettings({
+      ...settings,
+      theme: newTheme
+    });
   };
 
   const exportData = async () => {
@@ -702,8 +868,33 @@ function AuthenticatedApp() {
 
   return (
     <div className="app">
+      {/* Firebase Error Display */}
+      {error && (
+        <div className="error-banner" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: '#ef4444',
+          color: 'white',
+          padding: '8px 16px',
+          textAlign: 'center',
+          zIndex: 9999
+        }}>
+          {error} <button onClick={clearError} style={{ 
+            background: 'transparent', 
+            border: '1px solid white', 
+            color: 'white', 
+            marginLeft: '8px',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}>✕</button>
+        </div>
+      )}
+      
       {/* Header */}
-      <header className="header">
+      <header className="header" style={{ marginTop: error ? '40px' : '0' }}>
         <div className="header-content">
           <div className="header-left">
             <div className="logo" onClick={() => setActiveTab('dashboard')}>
@@ -770,16 +961,10 @@ function AuthenticatedApp() {
             <button onClick={toggleTheme} className="icon-button" title="Toggle theme">
               {settings.theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
-            <button onClick={exportData} className="icon-button" title="Export data">
-              <Download size={20} />
-            </button>
-            <label className="icon-button" title="Import data">
-              <Upload size={20} />
-              <input type="file" accept=".json" onChange={importData} style={{ display: 'none' }} />
-            </label>
+            {/* Export/Import disabled for Firebase version - will be re-added in future update */}
             <select 
               value={settings.currency} 
-              onChange={(e) => setSettings(prev => ({ ...prev, currency: e.target.value }))}
+              onChange={(e) => handleUpdateSettings({ ...settings, currency: e.target.value })}
               className="currency-select"
             >
               {currencies.map(currency => (
@@ -855,7 +1040,7 @@ function AuthenticatedApp() {
                   setEditingTransaction(transaction);
                   setShowTransactionForm(true);
                 }}
-                onDelete={deleteTransaction}
+                onDelete={handleDeleteTransaction}
               />
             </div>
           )}
@@ -863,9 +1048,9 @@ function AuthenticatedApp() {
           {activeTab === 'categories' && (
             <Categories
               categories={categories}
-              onAdd={addCategory}
-              onUpdate={updateCategory}
-              onDelete={deleteCategory}
+              onAdd={handleAddCategory}
+              onUpdate={handleUpdateCategory}
+              onDelete={handleDeleteCategory}
             />
           )}
           
@@ -875,9 +1060,9 @@ function AuthenticatedApp() {
               categories={categories}
               transactions={transactions}
               currency={settings.currency}
-              onAdd={addBudget}
-              onUpdate={updateBudget}
-              onDelete={deleteBudget}
+              onAdd={handleAddBudget}
+              onUpdate={handleUpdateBudget}
+              onDelete={handleDeleteBudget}
             />
           )}
           
@@ -886,10 +1071,10 @@ function AuthenticatedApp() {
               recurringTransactions={recurringTransactions}
               categories={categories}
               currency={settings.currency}
-              onAdd={addRecurringTransaction}
-              onUpdate={updateRecurringTransaction}
-              onDelete={deleteRecurringTransaction}
-              onToggleActive={toggleRecurringTransactionActive}
+              onAdd={handleAddRecurringTransaction}
+              onUpdate={handleUpdateRecurringTransaction}
+              onDelete={handleDeleteRecurringTransaction}
+              onToggleActive={handleToggleRecurringTransactionActive}
             />
           )}
           
@@ -908,10 +1093,10 @@ function AuthenticatedApp() {
               transactions={transactions}
               currency={settings.currency}
               categories={categories}
-              onAdd={addGoal}
-              onUpdate={updateGoal}
-              onDelete={deleteGoal}
-              onAddTransaction={addTransaction}
+              onAdd={handleAddGoal}
+              onUpdate={handleUpdateGoal}
+              onDelete={handleDeleteGoal}
+              onAddTransaction={handleAddTransaction}
             />
           )}
         </div>
@@ -925,7 +1110,7 @@ function AuthenticatedApp() {
               transaction={editingTransaction}
               categories={categories}
               currency={settings.currency}
-              onSubmit={editingTransaction ? updateTransaction : addTransaction}
+              onSubmit={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
               onCancel={() => {
                 setShowTransactionForm(false);
                 setEditingTransaction(null);
@@ -985,7 +1170,11 @@ function AppWithAuth() {
     );
   }
 
-  return currentUser ? <AuthenticatedApp /> : <AuthForm />;
+  return currentUser ? (
+    <DataProvider>
+      <AuthenticatedApp />
+    </DataProvider>
+  ) : <AuthForm />;
 }
 
 export default App;
