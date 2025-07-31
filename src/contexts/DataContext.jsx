@@ -37,7 +37,7 @@ const defaultCategories = [
 ];
 
 export const DataProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(defaultCategories);
   const [budgets, setBudgets] = useState([]);
