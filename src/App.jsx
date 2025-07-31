@@ -198,6 +198,7 @@ function AuthenticatedApp() {
     let lastScrollY = window.scrollY;
     let isScrollingDown = false;
     let ticking = false;
+    let navUpdateTimeout = null;
 
     const updateNavPosition = () => {
       const header = document.querySelector('.header');
@@ -237,19 +238,35 @@ function AuthenticatedApp() {
         // Check if we're near the bottom (within 50px) to prevent mobile bounce issues
         const isNearBottom = currentScrollY + windowHeight >= documentHeight - 50;
         
-        // Hide/show logic with mobile bounce protection
-        if (currentScrollY > 100 && isScrollingDown && !isNearBottom) {
-          // Hide header when scrolling down after 100px (but not near bottom)
+        // Detect if we're in bounce scroll territory (past actual bottom)
+        const isPastBottom = currentScrollY + windowHeight > documentHeight;
+        
+        // Hide/show logic with enhanced mobile bounce protection
+        if (currentScrollY > 100 && isScrollingDown && !isNearBottom && !isPastBottom) {
+          // Hide header when scrolling down after 100px (but not near or past bottom)
           header.classList.add('hidden');
-        } else if (!isScrollingDown || currentScrollY < 50 || isNearBottom) {
-          // Show header when scrolling up, near top, or near bottom
+        } else if (!isScrollingDown || currentScrollY < 50 || isNearBottom || isPastBottom) {
+          // Show header when scrolling up, near top, near bottom, or past bottom
           header.classList.remove('hidden');
         }
         
         // Update nav position if header visibility changed
         const isHidden = header.classList.contains('hidden');
         if (wasHidden !== isHidden) {
-          updateNavPosition();
+          // Clear any pending nav update
+          if (navUpdateTimeout) {
+            clearTimeout(navUpdateTimeout);
+          }
+          
+          // If we're near/past bottom, debounce the nav update to prevent rapid changes
+          if (isNearBottom || isPastBottom) {
+            navUpdateTimeout = setTimeout(() => {
+              updateNavPosition();
+            }, 100); // Short delay to prevent rapid bouncing
+          } else {
+            // Immediate update for normal scrolling
+            updateNavPosition();
+          }
         }
         
         // Add scrolled class for enhanced shadow
@@ -260,12 +277,18 @@ function AuthenticatedApp() {
         }
       }
       
-      // Navigation effects
+      // Navigation effects - but avoid updates during bounce scrolling
       if (nav) {
-        if (currentScrollY > 10) {
-          nav.classList.add('scrolled');
-        } else {
-          nav.classList.remove('scrolled');
+        const documentHeight = document.documentElement.scrollHeight;
+        const windowHeight = window.innerHeight;
+        const isPastBottom = currentScrollY + windowHeight > documentHeight;
+        
+        if (!isPastBottom) {
+          if (currentScrollY > 10) {
+            nav.classList.add('scrolled');
+          } else {
+            nav.classList.remove('scrolled');
+          }
         }
       }
       
@@ -295,6 +318,9 @@ function AuthenticatedApp() {
     return () => {
       window.removeEventListener('scroll', handleScroll, { passive: true });
       window.removeEventListener('resize', handleResize, { passive: true });
+      if (navUpdateTimeout) {
+        clearTimeout(navUpdateTimeout);
+      }
     };
   }, []);
 
