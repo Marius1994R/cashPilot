@@ -145,16 +145,19 @@ function RecurringTransactions({
     setIsSubmitting(true);
     
     try {
-      const submitData = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        id: editingRecurring ? editingRecurring.id : Date.now().toString()
-      };
-
       if (editingRecurring) {
-        await onUpdate(submitData);
+        const updateData = {
+          ...formData,
+          amount: parseFloat(formData.amount),
+          id: editingRecurring.id
+        };
+        await onUpdate(updateData);
       } else {
-        await onAdd(submitData);
+        const newRecurringData = {
+          ...formData,
+          amount: parseFloat(formData.amount)
+        };
+        await onAdd(newRecurringData);
       }
 
       handleCancel();

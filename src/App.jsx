@@ -688,48 +688,7 @@ function AuthenticatedApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
-  // Goal management functions
-  const addGoal = (goal) => {
-    const newGoal = {
-      ...goal,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setGoals(prev => [...prev, newGoal]);
-  };
 
-  const updateGoal = (updatedGoal) => {
-    setGoals(prev => prev.map(goal => 
-      goal.id === updatedGoal.id ? updatedGoal : goal
-    ));
-  };
-
-  const deleteGoal = async (id) => {
-    // Find the goal to get details for confirmation
-    const goal = goals.find(g => g.id === id);
-    if (!goal) return;
-
-    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
-    
-    const confirmed = await modal.showConfirm({
-      title: 'Delete Goal',
-      message: `Are you sure you want to delete this goal?\n\n🎯 ${goal.name}\n💰 Target: ${currency.symbol}${goal.targetAmount.toFixed(2)}\n📅 Due: ${new Date(goal.targetDate).toLocaleDateString()}\n\nThis will permanently remove the goal and all its contribution history.`,
-      confirmText: 'Delete Goal',
-      cancelText: 'Cancel',
-      type: 'confirm',
-      isDestructive: true
-    });
-
-    if (confirmed) {
-      setGoals(prev => prev.filter(g => g.id !== id));
-      
-      await modal.showAlert({
-        title: 'Goal Deleted',
-        message: 'The goal has been successfully deleted.',
-        type: 'success'
-      });
-    }
-  };
 
   const toggleTheme = async () => {
     const newTheme = settings.theme === 'light' ? 'dark' : 'light';

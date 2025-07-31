@@ -194,19 +194,21 @@ function FinancialGoals({ goals, transactions, currency, onAdd, onUpdate, onDele
     setIsSubmitting(true);
     
     try {
-      const submitData = {
-        ...formData,
-        targetAmount: parseFloat(formData.targetAmount),
-        currentAmount: parseFloat(formData.currentAmount || 0),
-        id: editingGoal ? editingGoal.id : Date.now().toString(),
-        createdAt: editingGoal ? editingGoal.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
       if (editingGoal) {
-        await onUpdate(submitData);
+        const updateData = {
+          ...formData,
+          targetAmount: parseFloat(formData.targetAmount),
+          currentAmount: parseFloat(formData.currentAmount || 0),
+          id: editingGoal.id
+        };
+        await onUpdate(updateData);
       } else {
-        await onAdd(submitData);
+        const newGoalData = {
+          ...formData,
+          targetAmount: parseFloat(formData.targetAmount),
+          currentAmount: parseFloat(formData.currentAmount || 0)
+        };
+        await onAdd(newGoalData);
       }
 
       handleCancel();

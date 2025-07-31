@@ -96,13 +96,23 @@ export const DataProvider = ({ children }) => {
       // Ensure Savings category exists
       const hasSavingsCategory = userCategories.some(cat => cat.name === 'Savings');
       if (!hasSavingsCategory) {
+        // Create Savings category in Firebase
         const savingsCategory = {
-          id: Date.now().toString(),
           name: 'Savings',
           color: '#10b981',
           type: 'expense'
         };
-        userCategories.push(savingsCategory);
+        try {
+          const newSavingsCategory = await categoryService.create(savingsCategory, user.uid);
+          userCategories.push(newSavingsCategory);
+        } catch (error) {
+          console.error('Error creating Savings category:', error);
+          // Fallback to adding locally if Firebase fails
+          userCategories.push({
+            id: 'savings-fallback',
+            ...savingsCategory
+          });
+        }
       }
       
       setCategories(userCategories);
