@@ -197,6 +197,7 @@ function AuthenticatedApp() {
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let isScrollingDown = false;
+    let ticking = false;
 
     const updateNavPosition = () => {
       const header = document.querySelector('.header');
@@ -216,23 +217,32 @@ function AuthenticatedApp() {
       }
     };
 
-    const handleScroll = () => {
+    const updateHeader = () => {
       const currentScrollY = window.scrollY;
       const header = document.querySelector('.header');
       const nav = document.querySelector('.nav');
       
-      // Determine scroll direction
-      isScrollingDown = currentScrollY > lastScrollY;
+      // Determine scroll direction with small threshold to prevent jitter
+      const scrollDifference = Math.abs(currentScrollY - lastScrollY);
+      if (scrollDifference > 2) {
+        isScrollingDown = currentScrollY > lastScrollY;
+      }
       
       // Header visibility logic
       if (header) {
         const wasHidden = header.classList.contains('hidden');
+        const documentHeight = document.documentElement.scrollHeight;
+        const windowHeight = window.innerHeight;
         
-        if (currentScrollY > 100 && isScrollingDown) {
-          // Hide header when scrolling down after 100px
+        // Check if we're near the bottom (within 50px) to prevent mobile bounce issues
+        const isNearBottom = currentScrollY + windowHeight >= documentHeight - 50;
+        
+        // Hide/show logic with mobile bounce protection
+        if (currentScrollY > 100 && isScrollingDown && !isNearBottom) {
+          // Hide header when scrolling down after 100px (but not near bottom)
           header.classList.add('hidden');
-        } else if (!isScrollingDown || currentScrollY < 50) {
-          // Show header when scrolling up or near top
+        } else if (!isScrollingDown || currentScrollY < 50 || isNearBottom) {
+          // Show header when scrolling up, near top, or near bottom
           header.classList.remove('hidden');
         }
         
@@ -260,6 +270,14 @@ function AuthenticatedApp() {
       }
       
       lastScrollY = currentScrollY;
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(updateHeader);
+        ticking = true;
+      }
     };
 
     // Set initial nav position
@@ -270,12 +288,13 @@ function AuthenticatedApp() {
       updateNavPosition();
     };
 
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleResize);
+    // Use passive listeners for better mobile performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize, { passive: true });
     
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, { passive: true });
+      window.removeEventListener('resize', handleResize, { passive: true });
     };
   }, []);
 
