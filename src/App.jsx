@@ -23,8 +23,12 @@ import {
   BarChart3,
   FileText,
   Repeat,
-  Flag
+  Flag,
+  LogOut,
+  User
 } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthForm from './components/Auth/AuthForm';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import Dashboard from './components/Dashboard';
@@ -53,7 +57,9 @@ const defaultCategories = [
   { id: '10', name: 'Investments', color: '#06b6d4', type: 'income' },
 ];
 
-function App() {
+// Main authenticated app component
+function AuthenticatedApp() {
+  const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(defaultCategories);
@@ -782,6 +788,12 @@ function App() {
                 </option>
               ))}
             </select>
+            <div className="user-menu">
+              <span className="user-name">{currentUser?.displayName || currentUser?.email}</span>
+              <button onClick={logout} className="icon-button" title="Sign out">
+                <LogOut size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -949,6 +961,31 @@ function App() {
       )}
     </div>
   );
+}
+
+// Main App component with authentication
+function App() {
+  return (
+    <AuthProvider>
+      <AppWithAuth />
+    </AuthProvider>
+  );
+}
+
+// Component that handles auth state
+function AppWithAuth() {
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return currentUser ? <AuthenticatedApp /> : <AuthForm />;
 }
 
 export default App;
