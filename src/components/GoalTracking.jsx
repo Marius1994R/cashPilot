@@ -20,7 +20,8 @@ import {
   TrendingDown,
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Flag
 } from 'lucide-react';
 import { currencies } from '../utils/currencies';
 
@@ -972,7 +973,7 @@ function GoalTracking({ goals, transactions, currency, categories, onAdd, onUpda
       </>
       ) : (
         <div className="empty-state">
-          <Target size={48} />
+          <Flag size={48} />
           <h3>No Savings Goals</h3>
           <p>Create your first savings goal to start tracking your financial progress.</p>
           <button onClick={handleAddGoal} className="add-button">

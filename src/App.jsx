@@ -674,15 +674,11 @@ function AuthenticatedApp() {
     }
   };
 
-  // Settings handler
+  // Settings handler (no confirmation modals for smoother UX)
   const handleUpdateSettings = async (newSettings) => {
     try {
       await updateSettings(newSettings);
-      await modal.showAlert({
-        title: 'Settings Updated',
-        message: 'Your settings have been successfully saved.',
-        type: 'success'
-      });
+      // No success modal - instant feedback through UI changes is sufficient
     } catch (error) {
       await modal.showAlert({
         title: 'Error',
@@ -747,8 +743,11 @@ function AuthenticatedApp() {
   React.useEffect(() => {
     if (showSettingsDropdown) {
       document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
     }
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [showSettingsDropdown]);
 
   const exportData = async () => {
