@@ -264,7 +264,7 @@ function FinancialGoals({ goals, transactions, currency, onAdd, onUpdate, onDele
   };
 
   const handleDelete = (goal) => {
-    if (window.confirm(`Are you sure you want to delete the goal "${goal.name}"?`)) {
+    if (window.confirm(`Are you sure you want to delete the goal: "${goal.name}"?`)) {
       onDelete(goal.id);
     }
   };

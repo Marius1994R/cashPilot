@@ -76,6 +76,16 @@ function AuthenticatedApp() {
     updateSettings,
     clearError
   } = useData();
+
+  // Show loading state BEFORE any other hooks to prevent hook order issues
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading your financial data...</p>
+      </div>
+    );
+  }
   
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showTransactionForm, setShowTransactionForm] = useState(false);
@@ -286,15 +296,7 @@ function AuthenticatedApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
-  // Show loading state while Firebase data is loading - after all hooks
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading your financial data...</p>
-      </div>
-    );
-  }
+
 
   const handleAddTransaction = async (transaction) => {
     try {
@@ -348,7 +350,7 @@ function AuthenticatedApp() {
     
     const confirmed = await modal.showConfirm({
       title: 'Delete Transaction',
-      message: `Are you sure you want to delete this transaction?\n\n📝 ${transaction.description}\n💰 ${amountFormatted}\n🏷️ ${categoryName}\n📅 ${new Date(transaction.date).toLocaleDateString()}\n\nThis action cannot be undone.`,
+      message: `Are you sure you want to delete this transaction?\n\n${transaction.description}\n\nThis action cannot be undone.`,
       confirmText: 'Delete Transaction',
       cancelText: 'Cancel',
       type: 'confirm',
@@ -419,7 +421,7 @@ function AuthenticatedApp() {
     const relatedTransactions = transactions.filter(t => t.categoryId === id);
     const relatedBudgets = budgets.filter(b => b.categoryId === id);
     
-    let warningMessage = `Are you sure you want to delete the category "${category.name}"?\n\n`;
+    let warningMessage = `Are you sure you want to delete this category?\n\n"${category.name}"\n`;
     
     if (relatedTransactions.length > 0) {
       warningMessage += `⚠️ This will affect ${relatedTransactions.length} transaction(s) using this category.\n`;
@@ -510,7 +512,7 @@ function AuthenticatedApp() {
     
     const confirmed = await modal.showConfirm({
       title: 'Delete Budget',
-      message: `Are you sure you want to delete this budget?\n\n📊 ${budget.name || categoryName + ' Budget'}\n💰 ${currency.symbol}${budget.amount.toFixed(2)} per ${budget.period}\n🏷️ ${categoryName}\n\nThis action cannot be undone.`,
+      message: `Are you sure you want to delete this budget?\n\n ${budget.name || categoryName + ' Budget'}\n\nThis action cannot be undone.`,
       confirmText: 'Delete Budget',
       cancelText: 'Cancel',
       type: 'confirm',
@@ -572,19 +574,38 @@ function AuthenticatedApp() {
   };
 
   const handleDeleteGoal = async (id) => {
-    try {
-      await deleteGoal(id);
-      await modal.showAlert({
-        title: 'Goal Deleted',
-        message: 'Goal has been successfully deleted.',
-        type: 'success'
-      });
-    } catch (error) {
-      await modal.showAlert({
-        title: 'Error',
-        message: 'Failed to delete goal. Please try again.',
-        type: 'error'
-      });
+    // Find the goal to get details for confirmation
+    const goal = goals.find(g => g.id === id);
+    if (!goal) return;
+
+    const currency = currencies.find(c => c.code === settings.currency) || currencies[0];
+    const currentAmountFormatted = `${currency.symbol}${Math.abs(goal.currentAmount).toFixed(2)}`;
+    const targetAmountFormatted = `${currency.symbol}${Math.abs(goal.targetAmount).toFixed(2)}`;
+    
+    const confirmed = await modal.showConfirm({
+      title: 'Delete Savings Goal',
+      message: `Are you sure you want to delete this goal?\n\n"${goal.name}"\n\nThis action cannot be undone and all progress data will be permanently lost.`,
+      confirmText: 'Delete Goal',
+      cancelText: 'Cancel',
+      type: 'confirm',
+      isDestructive: true
+    });
+
+    if (confirmed) {
+      try {
+        await deleteGoal(id);
+        await modal.showAlert({
+          title: 'Goal Deleted',
+          message: 'The savings goal has been successfully deleted.',
+          type: 'success'
+        });
+      } catch (error) {
+        await modal.showAlert({
+          title: 'Error',
+          message: 'Failed to delete goal. Please try again.',
+          type: 'error'
+        });
+      }
     }
   };
 
@@ -633,7 +654,7 @@ function AuthenticatedApp() {
     
     const confirmed = await modal.showConfirm({
       title: 'Delete Recurring Transaction',
-      message: `Are you sure you want to delete this recurring transaction?\n\n📋 ${recurring.description}\n💰 ${currency.symbol}${recurring.amount.toFixed(2)}\n🔄 ${recurring.frequency.charAt(0).toUpperCase() + recurring.frequency.slice(1)}\n🏷️ ${categoryName}\n\nThis will not affect already generated transactions.`,
+      message: `Are you sure you want to delete this recurring transaction?\n\n "${recurring.description}"\n\nThis will not affect already generated transactions.`,
       confirmText: 'Delete Recurring Transaction',
       cancelText: 'Cancel',
       type: 'confirm',
