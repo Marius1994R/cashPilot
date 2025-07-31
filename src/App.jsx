@@ -591,53 +591,54 @@ function AuthenticatedApp() {
   };
 
   // Function to generate transactions from recurring transactions
-  const generateRecurringTransactions = () => {
+  const generateRecurringTransactions = async () => {
     const today = new Date();
-    const newTransactions = [];
+    let generatedCount = 0;
 
-    recurringTransactions
-      .filter(recurring => recurring.isActive)
-      .forEach(recurring => {
-        const startDate = new Date(recurring.startDate);
-        const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
+    for (const recurring of recurringTransactions.filter(r => r.isActive)) {
+      const startDate = new Date(recurring.startDate);
+      const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
 
-        // Skip if end date has passed
-        if (endDate && today > endDate) return;
+      // Skip if end date has passed
+      if (endDate && today > endDate) continue;
 
-        // Skip if start date is in the future
-        if (startDate > today) return;
+      // Skip if start date is in the future  
+      if (startDate > today) continue;
 
-        // Check if we need to generate a transaction for today
-        const shouldGenerate = shouldGenerateTransaction(recurring, today);
-        
-        if (shouldGenerate) {
-          // Check if transaction already exists for today
-          const todayDateString = today.toISOString().split('T')[0];
-          const existingTransaction = transactions.find(t => 
-            t.date === todayDateString && 
-            t.recurringId === recurring.id
-          );
+      // Check if we need to generate a transaction for today
+      const shouldGenerate = shouldGenerateTransaction(recurring, today);
+      
+      if (shouldGenerate) {
+        // Check if transaction already exists for today
+        const todayDateString = today.toISOString().split('T')[0];
+        const existingTransaction = transactions.find(t => 
+          t.date === todayDateString && 
+          t.recurringId === recurring.id
+        );
 
-          if (!existingTransaction) {
+        if (!existingTransaction) {
+          try {
             const newTransaction = {
-              id: Date.now().toString() + '_' + recurring.id,
               type: recurring.type,
               amount: recurring.amount,
               description: `${recurring.description} (Auto)`,
               categoryId: recurring.categoryId,
               date: todayDateString,
               recurringId: recurring.id,
-              notes: recurring.notes || '',
-              createdAt: new Date().toISOString()
+              notes: recurring.notes || ''
             };
-            newTransactions.push(newTransaction);
+            
+            await addTransaction(newTransaction);
+            generatedCount++;
+          } catch (error) {
+            console.error('Error generating recurring transaction:', error);
           }
         }
-      });
+      }
+    }
 
-    if (newTransactions.length > 0) {
-      setTransactions(prev => [...prev, ...newTransactions]);
-      console.log(`Generated ${newTransactions.length} recurring transactions`);
+    if (generatedCount > 0) {
+      console.log(`Generated ${generatedCount} recurring transactions`);
     }
   };
 
@@ -673,7 +674,7 @@ function AuthenticatedApp() {
 
   // Generate recurring transactions on app load and daily
   useEffect(() => {
-    if (!isInitialized) return;
+    if (loading || recurringTransactions.length === 0) return;
     
     generateRecurringTransactions();
     
@@ -681,7 +682,7 @@ function AuthenticatedApp() {
     const interval = setInterval(generateRecurringTransactions, 24 * 60 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [isInitialized, recurringTransactions]);
+  }, [loading, recurringTransactions]);
 
   // Scroll to top when navigating between tabs
   useEffect(() => {
