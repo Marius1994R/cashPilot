@@ -67,7 +67,7 @@ const AuthForm = () => {
           <div className="auth-logo">
             <svg className="auth-logo-icon" viewBox="0 0 100 100" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
               <rect width="100" height="100" rx="20" fill="#10B981" />
-              <g transform="translate(15, 15) scale(2)">
+              <g transform="translate(10, 10) scale(2.5)">
                 <path
                   d="M3.363 4.414l4.875 19.348 9.467-3.018-8.448-10.298 10.902 9.56 8.853-2.77-25.649-12.822zM18.004 27.586v-5.324l-3.116 0.926 3.116 4.398z"
                   fill="white"
@@ -77,7 +77,7 @@ const AuthForm = () => {
               <circle cx="82" cy="82" r="10" fill="white" />
               <text
                 x="82"
-                y="82"
+                y="83"
                 fontSize="14"
                 fontWeight="bold"
                 fill="#10B981"
