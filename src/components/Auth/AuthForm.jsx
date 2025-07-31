@@ -74,10 +74,10 @@ const AuthForm = () => {
                   transform="scale(-1,1) translate(-32,0)"
                 />
               </g>
-              <circle cx="82" cy="82" r="10" fill="white" />
+              <circle cx="18" cy="18" r="10" fill="white" />
               <text
-                x="82"
-                y="83"
+                x="18"
+                y="21"
                 fontSize="14"
                 fontWeight="bold"
                 fill="#10B981"
