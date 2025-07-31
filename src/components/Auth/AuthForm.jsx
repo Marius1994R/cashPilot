@@ -65,7 +65,28 @@ const AuthForm = () => {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <span className="auth-logo-icon">💰</span>
+            <svg className="auth-logo-icon" viewBox="0 0 100 100" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+              <rect width="100" height="100" rx="20" fill="#10B981" />
+              <g transform="translate(15, 15) scale(2)">
+                <path
+                  d="M3.363 4.414l4.875 19.348 9.467-3.018-8.448-10.298 10.902 9.56 8.853-2.77-25.649-12.822zM18.004 27.586v-5.324l-3.116 0.926 3.116 4.398z"
+                  fill="white"
+                  transform="scale(-1,1) translate(-32,0)"
+                />
+              </g>
+              <circle cx="82" cy="82" r="10" fill="white" />
+              <text
+                x="82"
+                y="82"
+                fontSize="14"
+                fontWeight="bold"
+                fill="#10B981"
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                $
+              </text>
+            </svg>
             <h1>CashPilot</h1>
           </div>
           <p className="auth-subtitle">
