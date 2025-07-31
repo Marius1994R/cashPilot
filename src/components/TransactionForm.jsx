@@ -145,9 +145,13 @@ function TransactionForm({ transaction, categories, currency, onSubmit, onCancel
     try {
       const submitData = {
         ...formData,
-        amount: parseFloat(formData.amount),
-        id: transaction?.id
+        amount: parseFloat(formData.amount)
       };
+
+      // Only include id if it exists (for updating existing transactions)
+      if (transaction?.id) {
+        submitData.id = transaction.id;
+      }
 
       await onSubmit(submitData);
     } catch (error) {

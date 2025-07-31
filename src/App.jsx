@@ -84,15 +84,87 @@ function AuthenticatedApp() {
   // Modal hook for professional notifications
   const modal = useModal();
 
-  // Show loading state while Firebase data is loading
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading your financial data...</p>
-      </div>
-    );
-  }
+  // Helper function to get last day of month
+  const getLastDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  // Helper function to determine if a transaction should be generated
+  const shouldGenerateTransaction = (recurring, date) => {
+    const startDate = new Date(recurring.startDate);
+    
+    switch (recurring.frequency) {
+      case 'daily':
+        return date >= startDate;
+      
+      case 'weekly':
+        return date >= startDate && date.getDay() === recurring.dayOfWeek;
+      
+      case 'monthly':
+        const targetDay = Math.min(recurring.dayOfMonth, getLastDayOfMonth(date));
+        return date >= startDate && date.getDate() === targetDay;
+      
+      case 'yearly':
+        return date >= startDate && 
+               date.getMonth() === startDate.getMonth() && 
+               date.getDate() === startDate.getDate();
+      
+      default:
+        return false;
+    }
+  };
+
+  // Function to generate transactions from recurring transactions
+  const generateRecurringTransactions = async () => {
+    const today = new Date();
+    let generatedCount = 0;
+
+    for (const recurring of recurringTransactions.filter(r => r.isActive)) {
+      const startDate = new Date(recurring.startDate);
+      const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
+
+      // Skip if end date has passed
+      if (endDate && today > endDate) continue;
+
+      // Skip if start date is in the future  
+      if (startDate > today) continue;
+
+      // Check if we need to generate a transaction for today
+      const shouldGenerate = shouldGenerateTransaction(recurring, today);
+      
+      if (shouldGenerate) {
+        // Check if transaction already exists for today
+        const todayDateString = today.toISOString().split('T')[0];
+        const existingTransaction = transactions.find(t => 
+          t.date === todayDateString && 
+          t.recurringId === recurring.id
+        );
+
+        if (!existingTransaction) {
+          try {
+            const newTransaction = {
+              type: recurring.type,
+              amount: recurring.amount,
+              description: `${recurring.description} (Auto)`,
+              categoryId: recurring.categoryId,
+              date: todayDateString,
+              recurringId: recurring.id,
+              notes: recurring.notes || ''
+            };
+            
+            await addTransaction(newTransaction);
+            generatedCount++;
+          } catch (error) {
+            console.error('Error generating recurring transaction:', error);
+          }
+        }
+      }
+    }
+
+    if (generatedCount > 0) {
+      console.log(`Generated ${generatedCount} recurring transactions`);
+    }
+  };
 
   // Apply theme when settings change
   useEffect(() => {
@@ -194,6 +266,33 @@ function AuthenticatedApp() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Generate recurring transactions on app load and daily
+  useEffect(() => {
+    if (loading || recurringTransactions.length === 0) return;
+    
+    generateRecurringTransactions();
+    
+    // Set up daily check (every 24 hours)
+    const interval = setInterval(generateRecurringTransactions, 24 * 60 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [loading, recurringTransactions]);
+
+  // Scroll to top when navigating between tabs
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
+  // Show loading state while Firebase data is loading - after all hooks
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading your financial data...</p>
+      </div>
+    );
+  }
 
   const handleAddTransaction = async (transaction) => {
     try {
@@ -590,105 +689,6 @@ function AuthenticatedApp() {
       });
     }
   };
-
-  // Function to generate transactions from recurring transactions
-  const generateRecurringTransactions = async () => {
-    const today = new Date();
-    let generatedCount = 0;
-
-    for (const recurring of recurringTransactions.filter(r => r.isActive)) {
-      const startDate = new Date(recurring.startDate);
-      const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
-
-      // Skip if end date has passed
-      if (endDate && today > endDate) continue;
-
-      // Skip if start date is in the future  
-      if (startDate > today) continue;
-
-      // Check if we need to generate a transaction for today
-      const shouldGenerate = shouldGenerateTransaction(recurring, today);
-      
-      if (shouldGenerate) {
-        // Check if transaction already exists for today
-        const todayDateString = today.toISOString().split('T')[0];
-        const existingTransaction = transactions.find(t => 
-          t.date === todayDateString && 
-          t.recurringId === recurring.id
-        );
-
-        if (!existingTransaction) {
-          try {
-            const newTransaction = {
-              type: recurring.type,
-              amount: recurring.amount,
-              description: `${recurring.description} (Auto)`,
-              categoryId: recurring.categoryId,
-              date: todayDateString,
-              recurringId: recurring.id,
-              notes: recurring.notes || ''
-            };
-            
-            await addTransaction(newTransaction);
-            generatedCount++;
-          } catch (error) {
-            console.error('Error generating recurring transaction:', error);
-          }
-        }
-      }
-    }
-
-    if (generatedCount > 0) {
-      console.log(`Generated ${generatedCount} recurring transactions`);
-    }
-  };
-
-  // Helper function to determine if a transaction should be generated
-  const shouldGenerateTransaction = (recurring, date) => {
-    const startDate = new Date(recurring.startDate);
-    
-    switch (recurring.frequency) {
-      case 'daily':
-        return date >= startDate;
-      
-      case 'weekly':
-        return date >= startDate && date.getDay() === recurring.dayOfWeek;
-      
-      case 'monthly':
-        const targetDay = Math.min(recurring.dayOfMonth, getLastDayOfMonth(date));
-        return date >= startDate && date.getDate() === targetDay;
-      
-      case 'yearly':
-        return date >= startDate && 
-               date.getMonth() === startDate.getMonth() && 
-               date.getDate() === startDate.getDate();
-      
-      default:
-        return false;
-    }
-  };
-
-  // Helper function to get last day of month
-  const getLastDayOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-
-  // Generate recurring transactions on app load and daily
-  useEffect(() => {
-    if (loading || recurringTransactions.length === 0) return;
-    
-    generateRecurringTransactions();
-    
-    // Set up daily check (every 24 hours)
-    const interval = setInterval(generateRecurringTransactions, 24 * 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [loading, recurringTransactions]);
-
-  // Scroll to top when navigating between tabs
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
 
 
 
