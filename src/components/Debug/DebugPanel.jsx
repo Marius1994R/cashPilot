@@ -37,41 +37,103 @@ const DebugPanel = () => {
       
       logInfo(`✅ User authenticated: ${currentUser.email} (${currentUser.uid})`);
       
-      // Test direct Firebase service
-      logInfo('Testing direct transactionService.getAll...');
-      const directTransactions = await transactionService.getAll(currentUser.uid);
-      logInfo(`✅ Direct Firebase call successful. Transactions: ${directTransactions.length}`);
+      // Import Firebase functions directly for more granular testing
+      const { collection, getDocs, query, where, orderBy, addDoc } = await import('firebase/firestore');
+      const { db } = await import('../../firebase/config');
       
-      // Test adding a transaction
-      logInfo('Testing direct transactionService.create...');
-      const testTransaction = {
-        type: 'expense',
-        amount: 1,
-        description: 'Debug Test Transaction',
-        categoryId: categories[0]?.id || 'test-category',
-        date: new Date().toISOString().split('T')[0],
-        notes: 'This is a debug test'
-      };
+      // Test 1: Try simple collection access without query
+      logInfo('Test 1: Simple collection access...');
+      try {
+        const simpleQuery = collection(db, 'transactions');
+        const snapshot = await getDocs(simpleQuery);
+        logInfo(`✅ Simple collection access works. Documents: ${snapshot.size}`);
+      } catch (error) {
+        logInfo(`❌ Simple collection access failed: ${error.message}`);
+      }
       
-      const newTransaction = await transactionService.create(testTransaction, currentUser.uid);
-      logInfo(`✅ Direct transaction creation successful. ID: ${newTransaction.id}`);
+      // Test 2: Try with userId filter only (no orderBy)
+      logInfo('Test 2: userId filter only...');
+      try {
+        const userQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', currentUser.uid)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        logInfo(`✅ User filter works. User documents: ${userSnapshot.size}`);
+      } catch (error) {
+        logInfo(`❌ User filter failed: ${error.message}`);
+      }
       
-      // Test context addTransaction
-      logInfo('Testing context addTransaction...');
-      const contextTransaction = {
-        type: 'income',
-        amount: 2,
-        description: 'Context Test Transaction',
-        categoryId: categories[0]?.id || 'test-category',
-        date: new Date().toISOString().split('T')[0],
-        notes: 'This is a context test'
-      };
+      // Test 3: Try with compound query (userId + orderBy)
+      logInfo('Test 3: Compound query (userId + orderBy)...');
+      try {
+        const compoundQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const compoundSnapshot = await getDocs(compoundQuery);
+        logInfo(`✅ Compound query works. Documents: ${compoundSnapshot.size}`);
+      } catch (error) {
+        logInfo(`❌ Compound query failed: ${error.message}`);
+        logInfo(`Error code: ${error.code}`);
+      }
       
-      await addTransaction(contextTransaction);
-      logInfo('✅ Context addTransaction successful');
+      // Test 4: Check existing categories
+      logInfo('Test 4: Check categories collection...');
+      try {
+        const categoriesQuery = query(
+          collection(db, 'categories'),
+          where('userId', '==', currentUser.uid)
+        );
+        const categoriesSnapshot = await getDocs(categoriesQuery);
+        logInfo(`✅ Categories query works. Documents: ${categoriesSnapshot.size}`);
+        
+        // Log first few documents to see their structure
+        let count = 0;
+        categoriesSnapshot.forEach((doc) => {
+          if (count < 3) {
+            logInfo(`Category ${count + 1}: ${JSON.stringify(doc.data())}`);
+            count++;
+          }
+        });
+        
+      } catch (error) {
+        logInfo(`❌ Categories query failed: ${error.message}`);
+      }
+      
+      // Test 5: Add a transaction and then try to read it
+      logInfo('Test 5: Add transaction and read back...');
+      try {
+        const testTransaction = {
+          type: 'expense',
+          amount: 1,
+          description: 'Debug Test Transaction',
+          categoryId: categories[0]?.id || 'test-category',
+          date: new Date().toISOString().split('T')[0],
+          notes: 'This is a debug test',
+          userId: currentUser.uid,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        const docRef = await addDoc(collection(db, 'transactions'), testTransaction);
+        logInfo(`✅ Transaction added with ID: ${docRef.id}`);
+        
+        // Now try to read it back
+        const readQuery = query(
+          collection(db, 'transactions'),
+          where('userId', '==', currentUser.uid)
+        );
+        const readSnapshot = await getDocs(readQuery);
+        logInfo(`✅ Read back successful. Total transactions: ${readSnapshot.size}`);
+        
+      } catch (error) {
+        logInfo(`❌ Add and read test failed: ${error.message}`);
+      }
       
     } catch (error) {
-      logInfo(`❌ Error: ${error.message}`);
+      logInfo(`❌ General Error: ${error.message}`);
       logInfo(`❌ Error details: ${JSON.stringify(error, null, 2)}`);
     }
   };
