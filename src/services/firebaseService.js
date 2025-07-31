@@ -17,16 +17,31 @@ import { db } from '../firebase/config';
 export const firebaseService = {
   // Create a new document
   create: async (collectionName, data, userId) => {
+    console.log(`[FirebaseService] Creating document in ${collectionName}:`, data);
+    console.log(`[FirebaseService] User ID:`, userId);
+    
     try {
-      const docRef = await addDoc(collection(db, collectionName), {
+      const docData = {
         ...data,
         userId,
         createdAt: new Date(),
         updatedAt: new Date()
-      });
-      return { id: docRef.id, ...data };
+      };
+      
+      console.log(`[FirebaseService] Final document data:`, docData);
+      
+      const docRef = await addDoc(collection(db, collectionName), docData);
+      
+      console.log(`[FirebaseService] Document created with ID:`, docRef.id);
+      
+      const result = { id: docRef.id, ...data, userId, createdAt: docData.createdAt, updatedAt: docData.updatedAt };
+      console.log(`[FirebaseService] Returning:`, result);
+      
+      return result;
     } catch (error) {
-      console.error('Error creating document:', error);
+      console.error(`[FirebaseService] Error creating document in ${collectionName}:`, error);
+      console.error(`[FirebaseService] Error code:`, error.code);
+      console.error(`[FirebaseService] Error message:`, error.message);
       throw error;
     }
   },

@@ -38,6 +38,7 @@ import Budgets from './components/Budgets';
 import RecurringTransactions from './components/RecurringTransactions';
 import SpendingInsights from './components/SpendingInsights';
 import GoalTracking from './components/GoalTracking';
+import DebugPanel from './components/Debug/DebugPanel';
 import Alert from './components/Alert';
 import Confirm from './components/Confirm';
 import { currencies } from './utils/currencies';
@@ -1104,6 +1105,9 @@ function AuthenticatedApp() {
           isDestructive={modal.modalProps.isDestructive}
         />
       )}
+      
+      {/* Debug Panel for Development */}
+      <DebugPanel />
     </div>
   );
 }

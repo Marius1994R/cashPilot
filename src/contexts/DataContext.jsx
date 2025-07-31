@@ -168,15 +168,37 @@ export const DataProvider = ({ children }) => {
 
   // Transaction operations
   const addTransaction = async (transaction) => {
-    if (!user) return;
+    console.log('[DataContext] addTransaction called with:', transaction);
+    console.log('[DataContext] Current user:', user?.uid);
+    
+    if (!user) {
+      console.error('[DataContext] No user authenticated');
+      setError('User not authenticated');
+      return;
+    }
     
     try {
+      console.log('[DataContext] Calling transactionService.create...');
       const newTransaction = await transactionService.create(transaction, user.uid);
-      setTransactions(prev => [newTransaction, ...prev]);
+      console.log('[DataContext] Transaction created successfully:', newTransaction);
+      
+      setTransactions(prev => {
+        console.log('[DataContext] Updating transactions state. Previous count:', prev.length);
+        const updated = [newTransaction, ...prev];
+        console.log('[DataContext] New transactions count:', updated.length);
+        return updated;
+      });
+      
       return newTransaction;
     } catch (error) {
-      console.error('Error adding transaction:', error);
-      setError('Failed to add transaction');
+      console.error('[DataContext] Error adding transaction:', error);
+      console.error('[DataContext] Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      setError(`Failed to add transaction: ${error.message}`);
       throw error;
     }
   };
