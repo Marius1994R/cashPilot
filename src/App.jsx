@@ -80,6 +80,8 @@ function AuthenticatedApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
   
   // Modal hook for professional notifications
   const modal = useModal();
@@ -700,6 +702,55 @@ function AuthenticatedApp() {
     });
   };
 
+  // Enhanced settings handlers
+  const handleCurrencyChange = async (currency) => {
+    await handleUpdateSettings({
+      ...settings,
+      currency: currency
+    });
+    setShowSettingsDropdown(false);
+  };
+
+  const handleDisplayNameUpdate = async (newDisplayName) => {
+    try {
+      // Update Firebase Auth profile
+      if (currentUser && newDisplayName.trim()) {
+        const { updateProfile } = await import('firebase/auth');
+        await updateProfile(currentUser, {
+          displayName: newDisplayName.trim()
+        });
+        
+        modal.showAlert({
+          title: 'Profile Updated',
+          message: 'Your display name has been updated successfully.',
+          type: 'success'
+        });
+      }
+    } catch (error) {
+      modal.showAlert({
+        title: 'Update Failed',
+        message: 'Failed to update display name. Please try again.',
+        type: 'error'
+      });
+    }
+    setEditingDisplayName(false);
+  };
+
+  // Close dropdown when clicking outside
+  const handleClickOutside = (event) => {
+    if (!event.target.closest('.settings-dropdown')) {
+      setShowSettingsDropdown(false);
+    }
+  };
+
+  // Add click outside listener
+  React.useEffect(() => {
+    if (showSettingsDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showSettingsDropdown]);
+
   const exportData = async () => {
     const exportStats = {
       transactions: transactions.length,
@@ -887,26 +938,117 @@ function AuthenticatedApp() {
             </div>
           </div>
           <div className="header-right">
-            <button onClick={toggleTheme} className="icon-button" title="Toggle theme">
-              {settings.theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-            {/* Export/Import disabled for Firebase version - will be re-added in future update */}
-            <select 
-              value={settings.currency} 
-              onChange={(e) => handleUpdateSettings({ ...settings, currency: e.target.value })}
-              className="currency-select"
-            >
-              {currencies.map(currency => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.symbol} {currency.code}
-                </option>
-              ))}
-            </select>
-            <div className="user-menu">
-              <span className="user-name">{currentUser?.displayName || currentUser?.email}</span>
-              <button onClick={logout} className="icon-button" title="Sign out">
-                <LogOut size={20} />
+            <div className="settings-dropdown">
+              <button 
+                onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                className="settings-trigger"
+                title="Settings & Profile"
+              >
+                <Settings size={20} />
+                <span className="user-name-compact">{currentUser?.displayName || currentUser?.email?.split('@')[0]}</span>
               </button>
+              
+              {showSettingsDropdown && (
+                <div className="settings-menu">
+                  {/* User Profile Section */}
+                  <div className="settings-section">
+                    <div className="settings-section-header">
+                      <User size={16} />
+                      <span>Profile</span>
+                    </div>
+                    <div className="settings-item">
+                      <label>Display Name</label>
+                      {editingDisplayName ? (
+                        <div className="inline-edit">
+                          <input
+                            type="text"
+                            defaultValue={currentUser?.displayName || ''}
+                            onBlur={(e) => handleDisplayNameUpdate(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleDisplayNameUpdate(e.target.value);
+                              if (e.key === 'Escape') setEditingDisplayName(false);
+                            }}
+                            autoFocus
+                            className="inline-input"
+                          />
+                        </div>
+                      ) : (
+                        <div className="setting-value" onClick={() => setEditingDisplayName(true)}>
+                          {currentUser?.displayName || 'Click to set'}
+                          <Edit size={14} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="settings-item">
+                      <label>Email</label>
+                      <div className="setting-value readonly">
+                        {currentUser?.email}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Appearance Section */}
+                  <div className="settings-section">
+                    <div className="settings-section-header">
+                      <Moon size={16} />
+                      <span>Appearance</span>
+                    </div>
+                    <div className="settings-item">
+                      <label>Theme</label>
+                      <div className="theme-toggle">
+                        <button 
+                          onClick={toggleTheme}
+                          className={`theme-option ${settings.theme === 'light' ? 'active' : ''}`}
+                        >
+                          <Sun size={16} />
+                          Light
+                        </button>
+                        <button 
+                          onClick={toggleTheme}
+                          className={`theme-option ${settings.theme === 'dark' ? 'active' : ''}`}
+                        >
+                          <Moon size={16} />
+                          Dark
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Currency & Format Section */}
+                  <div className="settings-section">
+                    <div className="settings-section-header">
+                      <DollarSign size={16} />
+                      <span>Currency & Format</span>
+                    </div>
+                    <div className="settings-item">
+                      <label>Currency</label>
+                      <select 
+                        value={settings.currency} 
+                        onChange={(e) => handleCurrencyChange(e.target.value)}
+                        className="settings-select"
+                      >
+                        {currencies.map(currency => (
+                          <option key={currency.code} value={currency.code}>
+                            {currency.symbol} {currency.code} - {currency.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Account Actions */}
+                  <div className="settings-section">
+                    <div className="settings-section-header">
+                      <LogOut size={16} />
+                      <span>Account</span>
+                    </div>
+                    <button onClick={logout} className="settings-action danger">
+                      <LogOut size={16} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
